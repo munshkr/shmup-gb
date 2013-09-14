@@ -1,5 +1,7 @@
 #include <gb/gb.h>
 #include <rand.h>
+#include <stdio.h>
+#include <gb/console.h>
 
 #include "sprites.h"
 #include "sprites.c"
@@ -18,6 +20,7 @@
 UWORD seed;
 
 int i;
+int n;
 UBYTE key;
 
 BOOLEAN pshot;
@@ -111,6 +114,21 @@ void move_lasers() {
     }
 }
 
+void spawn_enemies() {
+    n = arand();
+
+    if (!(n % 50)) {
+        for (i = 0; i < MAX_ENEMIES; i++) {
+            if (!es[i]) {
+                es[i] = TRUE;
+                ex[i] = ((UINT8) arand() % 160) + 8;
+                ey[i] = 0;
+                break;
+            }
+        }
+    }
+}
+
 void move_enemies() {
     for (i = 0; i < MAX_ENEMIES; i++) {
         if (es[i]) {
@@ -161,9 +179,14 @@ void main() {
 
     while (1) {
         wait_vbl_done();
+
         handle_input();
+
         move_lasers();
+
+        spawn_enemies();
         move_enemies();
+
         update_sprites();
     }
 }
