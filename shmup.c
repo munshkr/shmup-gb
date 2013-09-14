@@ -1,4 +1,5 @@
 #include <gb/gb.h>
+#include <rand.h>
 
 #include "sprites.h"
 #include "sprites.c"
@@ -6,8 +7,15 @@
 #define SP_NULL     0
 #define SP_SHIP     1
 #define SP_LASER    2
+#define SP_ENEMY    3
 
 #define MAX_LASERS  8
+#define MAX_ENEMIES 8
+
+#define BASE_TILE_LASER 1
+#define BASE_TILE_ENEMY (BASE_TILE_LASER + MAX_LASERS)
+
+UWORD seed;
 
 int i;
 UBYTE key;
@@ -19,11 +27,15 @@ BOOLEAN ls[MAX_LASERS];
 int lx[MAX_LASERS];
 int ly[MAX_LASERS];
 
+BOOLEAN es[MAX_ENEMIES];
+int ex[MAX_ENEMIES];
+int ey[MAX_ENEMIES];
+
 
 void init_screen() {
     SPRITES_8x8;
 
-    set_sprite_data(0, 3, sprites);
+    set_sprite_data(0, 4, sprites);
 
     // clear OAM
     for (i = 0; i < 40; i++) {
@@ -35,11 +47,21 @@ void init_screen() {
 
 void init_lasers() {
     for (i = 0; i < MAX_LASERS; i++) {
-        set_sprite_tile(i + 1, SP_LASER);
+        set_sprite_tile(BASE_TILE_LASER + i, SP_LASER);
 
         ls[i] = FALSE;
         lx[i] = 0;
         ly[i] = 0;
+    }
+}
+
+void init_enemies() {
+    for (i = 0; i < MAX_ENEMIES; i++) {
+        set_sprite_tile(BASE_TILE_ENEMY + i, SP_ENEMY);
+
+        es[i] = FALSE;
+        ex[i] = 0;
+        ey[i] = 0;
     }
 }
 
@@ -89,12 +111,29 @@ void move_lasers() {
     }
 }
 
+void move_enemies() {
+    for (i = 0; i < MAX_ENEMIES; i++) {
+        if (es[i]) {
+            ey[i]++;
+            if (ey[i] > 160) {
+                es[i] = FALSE;
+            }
+        }
+    }
+}
+
 void update_sprites() {
     move_sprite(0, px, py);
 
     for (i = 0; i < MAX_LASERS; i++) {
         if (ls[i]) {
-            move_sprite(i + 1, lx[i], ly[i]);
+            move_sprite(BASE_TILE_LASER + i, lx[i], ly[i]);
+        }
+    }
+
+    for (i = 0; i < MAX_ENEMIES; i++) {
+        if (es[i]) {
+            move_sprite(BASE_TILE_ENEMY + i, ex[i], ey[i]);
         }
     }
 }
@@ -104,9 +143,18 @@ void main() {
     disable_interrupts();
     DISPLAY_OFF;
 
+    seed = DIV_REG;
+    waitpadup();
+    seed |= ((UINT16)DIV_REG << 8);
+    initarand(seed);
+
     init_screen();
     init_player();
     init_lasers();
+    init_enemies();
+
+    es[0] = TRUE;
+    ex[0] = 40;
 
     DISPLAY_ON;
     enable_interrupts();
@@ -114,9 +162,8 @@ void main() {
     while (1) {
         wait_vbl_done();
         handle_input();
-
         move_lasers();
-
+        move_enemies();
         update_sprites();
     }
 }
