@@ -171,9 +171,6 @@ void main() {
     init_lasers();
     init_enemies();
 
-    es[0] = TRUE;
-    ex[0] = 40;
-
     DISPLAY_ON;
     enable_interrupts();
 
