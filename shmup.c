@@ -8,14 +8,18 @@
 
 #define SP_NULL     0
 #define SP_SHIP     1
-#define SP_LASER    2
-#define SP_ENEMY    3
+#define SP_SHIP_L   2
+#define SP_SHIP_R   3
+#define SP_SHIP_B   4
+#define SP_LASER    5
+#define SP_ENEMY    6
 
 #define MAX_LASERS  8
 #define MAX_ENEMIES 8
 
-#define BASE_TILE_LASER 1
+#define BASE_TILE_LASER 6
 #define BASE_TILE_ENEMY (BASE_TILE_LASER + MAX_LASERS)
+#define SHIP_TILE(sp) (sp - 1)
 
 UWORD seed;
 
@@ -24,7 +28,7 @@ int n;
 UBYTE key;
 
 BOOLEAN pshot;
-int px, py;
+int px, py, tile;
 
 BOOLEAN ls[MAX_LASERS];
 int lx[MAX_LASERS];
@@ -38,7 +42,7 @@ int ey[MAX_ENEMIES];
 void init_screen() {
     SPRITES_8x8;
 
-    set_sprite_data(0, 4, sprites);
+    set_sprite_data(0, 7, sprites);
 
     // clear OAM
     for (i = 0; i < 40; i++) {
@@ -69,8 +73,11 @@ void init_enemies() {
 }
 
 void init_player() {
-    set_sprite_tile(0, SP_SHIP);
+    for (i = 0; i < 4; i++) {
+        set_sprite_tile(i, SP_SHIP + i);
+    }
 
+    tile = SHIP_TILE(SP_SHIP);
     px = 84;
     py = 140;
 }
@@ -78,16 +85,27 @@ void init_player() {
 void handle_input() {
     key = joypad();
 
+    tile = SHIP_TILE(SP_SHIP);
+
     if (key & J_LEFT) {
-        if (px > 8) px--;
+        if (px > 8) {
+            px--;
+            tile = SHIP_TILE(SP_SHIP_L);
+        }
     } else if (key & J_RIGHT) {
-        if (px < 160) px++;
+        if (px < 160) {
+            px++;
+            tile = SHIP_TILE(SP_SHIP_R);
+        }
     }
 
     if (key & J_UP) {
         if (py > 16) py--;
     } else if (key & J_DOWN) {
-        if (py < 151) py++;
+        if (py < 151) {
+            py++;
+            tile = SHIP_TILE(SP_SHIP_B);
+        }
     }
 
     if (key & J_A && !pshot) {
@@ -140,8 +158,15 @@ void move_enemies() {
     }
 }
 
+void clear_ships() {
+    for (i = 0; i < 4; i++) {
+        move_sprite(SP_SHIP - 1 + i, 0, 0);
+    }
+}
+
 void update_sprites() {
-    move_sprite(0, px, py);
+    clear_ships();
+    move_sprite(tile, px, py);
 
     for (i = 0; i < MAX_LASERS; i++) {
         if (ls[i]) {
